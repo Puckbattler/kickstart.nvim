@@ -92,13 +92,11 @@ vim.g.maplocalleader = ' '
 
 -- NOTE: JTK - Adding Powershell as the terminal emulator.
 
-vim.opt.shell = '"C:\\Program Files\\PowerShell\\7\\pwsh.exe"'
-vim.opt.shellquote = '"'
+
+vim.opt.shell = 'pwsh'
+vim.opt.shellcmdflag = '-nologo -noprofile -ExecutionPolicy RemoteSigned -command'
 vim.opt.shellxquote = ''
-vim.api.nvim_set_var(
-  'shellcmdflag',
-  '-NoLogo -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new();$PSDefaultParameterValues[Out-File:Encoding]=utf8;Remove-Alias -Force -ErrorAction SilentlyContinue tee;'
-)
+
 vim.api.nvim_set_var('shellreir', '2>&1 | %%{ "$_" } | Out-File %s; exit $LastExitCode')
 vim.api.nvim_set_var('shellpipe', '2>&1 | %%{ "$_" } | tee %s; exit $LastExitCode')
 vim.api.nvim_set_var('shellquote', 'shellxquote')
