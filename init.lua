@@ -92,16 +92,16 @@ vim.g.maplocalleader = ' '
 
 -- NOTE: JTK - Adding Powershell as the terminal emulator.
 
- vim.opt.shell = '"C:\\Program Files\\PowerShell\\7\\pwsh.exe"'
- vim.opt.shellquote = '"'
- vim.opt.shellxquote = ''
- vim.api.nvim_set_var(
- 'shellcmdflag',
- '-NoLogo -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new();$PSDefaultParameterValues[Out-File:Encoding]=utf8;Remove-Alias -Force -ErrorAction SilentlyContinue tee;'
- )
- vim.api.nvim_set_var('shellreir', '2>&1 | %%{ "$_" } | Out-File %s; exit $LastExitCode')
- vim.api.nvim_set_var('shellpipe', '2>&1 | %%{ "$_" } | tee %s; exit $LastExitCode')
- vim.api.nvim_set_var('shellquote', 'shellxquote')
+vim.opt.shell = '"C:\\Program Files\\PowerShell\\7\\pwsh.exe"'
+vim.opt.shellquote = '"'
+vim.opt.shellxquote = ''
+vim.api.nvim_set_var(
+  'shellcmdflag',
+  '-NoLogo -ExecutionPolicy RemoteSigned -Command [Console]::InputEncoding=[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new();$PSDefaultParameterValues[Out-File:Encoding]=utf8;Remove-Alias -Force -ErrorAction SilentlyContinue tee;'
+)
+vim.api.nvim_set_var('shellreir', '2>&1 | %%{ "$_" } | Out-File %s; exit $LastExitCode')
+vim.api.nvim_set_var('shellpipe', '2>&1 | %%{ "$_" } | tee %s; exit $LastExitCode')
+vim.api.nvim_set_var('shellquote', 'shellxquote')
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
@@ -358,19 +358,19 @@ require('lazy').setup({
       -- see below for full list of options 👇
     },
   },
-{
-  "NeogitOrg/neogit",
-  dependencies = {
-    "nvim-lua/plenary.nvim",         -- required
-    "sindrets/diffview.nvim",        -- optional - Diff integration
+  {
+    'NeogitOrg/neogit',
+    dependencies = {
+      'nvim-lua/plenary.nvim', -- required
+      'sindrets/diffview.nvim', -- optional - Diff integration
 
-    -- Only one of these is needed.
-    "nvim-telescope/telescope.nvim", -- optional
-    "ibhagwan/fzf-lua",              -- optional
-    "echasnovski/mini.pick",         -- optional
+      -- Only one of these is needed.
+      'nvim-telescope/telescope.nvim', -- optional
+      'ibhagwan/fzf-lua', -- optional
+      'echasnovski/mini.pick', -- optional
+    },
+    config = true,
   },
-  config = true
-},
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
@@ -476,22 +476,22 @@ require('lazy').setup({
       end, { desc = '[S]earch [N]eovim files' })
     end,
   },
-
   {
-    {
-      'CopilotC-Nvim/CopilotChat.nvim',
-      branch = 'canary',
-      dependencies = {
-        { 'zbirenbaum/copilot.lua' }, -- or github/copilot.vim
-        { 'nvim-lua/plenary.nvim' }, -- for curl, log wrapper
-      },
-      build = 'make tiktoken', -- Only on MacOS or Linux
-      opts = {
-        debug = true, -- Enable debugging
-        -- See Configuration section for rest
-      },
-      -- See Commands section for default commands if you want to lazy load on them
-    },
+    'github/copilot.vim',
+    config = function()
+      -- Disable default tab mapping of copilot
+      vim.g.copilot_no_tab_map = true
+      -- Use <C-j> to accept suggestion
+      vim.g.copilot_assume_mapped = true
+      vim.keymap.set('i', '<C-j>', 'copilot#Accept("<CR>")', {
+        expr = true,
+        replace_keycodes = false,
+      })
+      -- Enable for specific filetypes
+      vim.g.copilot_filetypes = {
+        ['*'] = true,
+      }
+    end,
   },
   { -- LSP Configuration & Plugins
     'neovim/nvim-lspconfig',
@@ -1068,7 +1068,7 @@ require('lazy').setup({
   {
     'tpope/vim-fugitive',
   },
-    {
+  {
     'folke/zen-mode.nvim',
     opts = {
       -- your configuration comes here
