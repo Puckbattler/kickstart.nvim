@@ -91,15 +91,19 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- NOTE: JTK - Adding Powershell as the terminal emulator.
-
-
 vim.opt.shell = 'pwsh'
 vim.opt.shellcmdflag = '-nologo -noprofile -ExecutionPolicy RemoteSigned -command'
 vim.opt.shellxquote = ''
 
-vim.api.nvim_set_var('shellreir', '2>&1 | %%{ "$_" } | Out-File %s; exit $LastExitCode')
+vim.api.nvim_set_var('shellredir', '2>&1 | %%{ "$_" } | Out-File %s; exit $LastExitCode')
 vim.api.nvim_set_var('shellpipe', '2>&1 | %%{ "$_" } | tee %s; exit $LastExitCode')
-vim.api.nvim_set_var('shellquote', 'shellxquote')
+vim.api.nvim_set_var('shellquote', '')
+
+-- Fix for gitsigns compatibility with PowerShell
+vim.g.gitsigns_use_internal_diff = true
+
+-- Alternative shell configuration for git operations (uncomment if needed)
+-- vim.g.gitsigns_git_command = 'cmd /c git'
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
@@ -292,7 +296,7 @@ require('lazy').setup({
 
       -- Document existing key chains
       require('which-key').add {
-        { '<leader>c', group = '[c]ode' },
+        { '<leader>c', group = '[C]ode' },
         { '<leader>c_', hidden = true },
         { '<leader>d', group = '[d]ocument' },
         { '<leader>d_', hidden = true },
@@ -675,6 +679,51 @@ require('lazy').setup({
             },
           },
         },
+
+        html = {
+          filetypes = { 'html', 'cshtml' }, -- Now supports both .html and .cshtml files
+        },
+
+        cssls = {
+          cmd = { 'vscode-css-language-server' },
+          filetypes = { 'css', 'scss', 'less', 'cshtml' }, -- Adds cshtml if you want embedded CSS support
+        },
+
+        -- OmniSharp-Roslyn configuration for C# development
+        omnisharp = {
+          cmd = { 'omnisharp' },
+          enable_import_completion = true,
+          organize_imports_on_format = true,
+          enable_ms_build_load_projects_on_demand = false,
+
+          settings = {
+            FormattingOptions = {
+              OrganizeImports = true,
+            },
+            MsBuild = {
+              LoadProjectsOnDemand = false,
+            },
+            RoslynExtensionsOptions = {
+              EnableAnalyzersSupport = true,
+              EnableImportCompletion = true,
+              AnalyzeOpenDocumentsOnly = false,
+            },
+            Sdk = {
+              IncludePrereleases = true,
+            },
+          },
+
+          init_options = {
+            autoStart = true,
+          },
+
+          filetypes = { 'cs', 'vb' },
+
+          root_dir = function(fname)
+            local lsputil = require 'lspconfig.util'
+            return lsputil.root_pattern('*.sln', '*.csproj', 'omnisharp.json', 'function.json')(fname) or lsputil.find_git_ancestor(fname)
+          end,
+        },
       }
 
       -- Ensure the servers and tools above are installed
@@ -690,21 +739,23 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'html-lsp', -- HTML language server (explicit addition)
+        'css-lsp', -- CSS language server (explicit addition)
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
-      require('mason-lspconfig').setup {
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            -- This handles overriding only values explicitly passed
-            -- by the server configuration above. Useful when disabling
-            -- certain features of an LSP (for example, turning off formatting for tsserver)
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
-          end,
-        },
-      }
+      -- Setup each LSP server directly
+      for server_name, server_config in pairs(servers) do
+        local server = vim.deepcopy(server_config) or {}
+
+        -- Handle function-based cmd
+        if type(server.cmd) == 'function' then
+          server.cmd = server.cmd()
+        end
+
+        server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+        require('lspconfig')[server_name].setup(server)
+      end
     end,
   },
 
@@ -1126,6 +1177,60 @@ require('lazy').setup({
     },
   },
 })
+
+-- C# file type configuration
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'cs', 'vb' },
+  callback = function()
+    vim.opt_local.tabstop = 4
+    vim.opt_local.shiftwidth = 4
+    vim.opt_local.expandtab = true
+    vim.opt_local.smartindent = true
+  end,
+})
+
+-- Razor/CSHTML file type configuration
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'cshtml' },
+  callback = function()
+    vim.opt_local.tabstop = 4
+    vim.opt_local.shiftwidth = 4
+    vim.opt_local.expandtab = true
+    vim.opt_local.smartindent = true
+    -- Set filetype to enable proper syntax highlighting
+    vim.bo.filetype = 'html'
+  end,
+})
+
+-- Detect .cshtml files properly
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  pattern = '*.cshtml',
+  callback = function()
+    vim.bo.filetype = 'cshtml'
+  end,
+})
+
+-- Optional: Format and organize imports on save for C# files
+vim.api.nvim_create_autocmd('BufWritePre', {
+  pattern = '*.cs',
+  callback = function()
+    -- You can enable these by setting the global variables to true
+    if vim.g.omnisharp_organize_imports_on_save then
+      vim.lsp.buf.code_action {
+        context = { only = { 'source.organizeImports' } },
+        apply = true,
+      }
+    end
+
+    if vim.g.omnisharp_format_on_save then
+      vim.lsp.buf.format { async = false }
+    end
+  end,
+})
+
+-- Global configuration variables for OmniSharp
+vim.g.omnisharp_organize_imports_on_save = true
+vim.g.omnisharp_format_on_save = true
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
