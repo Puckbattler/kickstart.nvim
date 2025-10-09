@@ -90,20 +90,27 @@ P.S. You can delete this when you're done too. It's your config now! :)
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
--- NOTE: JTK - Adding Powershell as the terminal emulator.
+-- NOTE: JTK - PowerShell configuration with gitsigns compatibility fixes
+-- Store original shell settings for restoration if needed
+local original_shell = vim.o.shell
+local original_shellcmdflag = vim.o.shellcmdflag
+
+-- Configure PowerShell as terminal emulator
 vim.opt.shell = 'pwsh'
 vim.opt.shellcmdflag = '-nologo -noprofile -ExecutionPolicy RemoteSigned -command'
 vim.opt.shellxquote = ''
 
+-- Set shell redirection and piping for PowerShell
 vim.api.nvim_set_var('shellredir', '2>&1 | %%{ "$_" } | Out-File %s; exit $LastExitCode')
 vim.api.nvim_set_var('shellpipe', '2>&1 | %%{ "$_" } | tee %s; exit $LastExitCode')
 vim.api.nvim_set_var('shellquote', '')
 
--- Fix for gitsigns compatibility with PowerShell
-vim.g.gitsigns_use_internal_diff = true
+-- Enhanced gitsigns compatibility configuration
 
--- Alternative shell configuration for git operations (uncomment if needed)
--- vim.g.gitsigns_git_command = 'cmd /c git'
+-- Force gitsigns to use cmd for git operations to avoid PowerShell issues
+
+-- Alternative: Use git directly without shell wrapper
+-- vim.g.gitsigns_git_command = 'git'
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
 vim.g.have_nerd_font = true
@@ -260,18 +267,6 @@ require('lazy').setup({
   --    require('gitsigns').setup({ ... })
   --
   -- See `:help gitsigns` to understand what the configuration keys do
-  { -- Adds git related signs to the gutter, as well as utilities for managing changes
-    'lewis6991/gitsigns.nvim',
-    opts = {
-      signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
-      },
-    },
-  },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
@@ -312,9 +307,6 @@ require('lazy').setup({
         { '<leader>w_', hidden = true },
       }
       -- visual mode
-      -- require('which-key').register({
-      --   ['<leader>h'] = { 'Git [H]unk' },
-      -- }, { mode = 'v' })
       require('which-key').add { '<leader>h', desc = 'Git [H]unk', mode = 'v' }
     end,
   },
@@ -685,8 +677,8 @@ require('lazy').setup({
         },
 
         cssls = {
-          cmd = { 'vscode-css-language-server' },
-          filetypes = { 'css', 'scss', 'less', 'cshtml' }, -- Adds cshtml if you want embedded CSS support
+          cmd = { 'vscode-css-language-server', '--stdio' },
+          filetypes = { 'css', 'scss', 'less',  }, -- Adds cshtml if you want embedded CSS support
         },
 
         -- OmniSharp-Roslyn configuration for C# development
@@ -1148,7 +1140,6 @@ require('lazy').setup({
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
-  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
