@@ -1,10 +1,54 @@
+local function get_rolled_over(section_keyword)
+  -- Determine vault from current buffer path
+  local buf_path = vim.fn.expand '%:p'
+  local vault
+  if buf_path:find('HockeyDJPlans', 1, true) then
+    vault = vim.fn.expand '~/source/repos/HockeyDJ/HockeyDJPlans'
+  else
+    vault = vim.fn.expand '~/OneDrive/Documents/School Stuff'
+  end
+  local daily_dir = vault .. '/Daily Notes'
+  local today = os.date '%Y-%m-%d'
+  local files = vim.fn.globpath(daily_dir, '*.md', false, true)
+  table.sort(files)
+  local prev_file = nil
+  for _, f in ipairs(files) do
+    local name = vim.fn.fnamemodify(f, ':t:r')
+    if name < today then
+      prev_file = f
+    end
+  end
+  if not prev_file then return '' end
+  local lines = vim.fn.readfile(prev_file)
+  local in_section = false
+  local items = {}
+  for _, line in ipairs(lines) do
+    if line:match '^## ' then
+      if in_section then break end
+      if line:find(section_keyword, 1, true) then
+        in_section = true
+      end
+    elseif in_section then
+      if line:match '^%s*%- %[ %]' then
+        local text = line:match '^%s*%- %[ %] (.*)'
+        if text and text:match '%S' then
+          table.insert(items, line)
+        end
+      end
+    end
+  end
+  if #items == 0 then return '' end
+  return table.concat(items, '\n')
+end
+
 return {
   'obsidian-nvim/obsidian.nvim',
   -- TODO: switch back to version = '*' after next release
   branch = 'main',
   -- Only load when at least one workspace directory exists
   enabled = vim.fn.isdirectory(vim.fn.expand '~/OneDrive/Documents/School Stuff') == 1
-    or vim.fn.isdirectory(vim.fn.expand '~/Home') == 1,
+    or vim.fn.isdirectory(vim.fn.expand '~/Home') == 1
+    or vim.fn.isdirectory(vim.fn.expand '~/source/repos/HockeyDJ/HockeyDJPlans') == 1,
   lazy = false,
   ft = 'markdown',
   dependencies = {
@@ -15,6 +59,15 @@ return {
       {
         name = 'personal',
         path = '~/OneDrive/Documents/School Stuff',
+        overrides = {
+          daily_notes = {
+            workdays_only = false,
+          },
+        },
+      },
+      {
+        name = 'hockeydj',
+        path = '~/source/repos/HockeyDJ/HockeyDJPlans',
         overrides = {
           daily_notes = {
             workdays_only = false,
@@ -73,6 +126,12 @@ return {
         long_date = function()
           return os.date('%B %d, %Y'):gsub(' 0', ' ')
         end,
+        rolled_over_notes = function()
+          return get_rolled_over 'Notes'
+        end,
+        rolled_over_todo = function()
+          return get_rolled_over 'TODO'
+        end,
       },
     },
 
@@ -81,8 +140,9 @@ return {
     },
 
     daily_notes = {
+      folder = 'Daily Notes',
       template = 'Template, Daily Note.md',
-      date_format = 'YYYYMMDD-[daily-note]',
+      date_format = 'YYYY-MM-DD',
       alias_format = '[Daily Note]',
     },
 
